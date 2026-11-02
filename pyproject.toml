@@ -1,0 +1,51 @@
+[project]
+name = "bdc-loader"
+version = "1.0.0"
+description = "QGIS plugin for browsing the Brazil Data Cube (BDC) STAC catalog and loading satellite imagery as VRT"
+readme = "bdc_loader_plugin/README.md"
+license = "GPL-3.0-only"
+requires-python = ">=3.9"
+authors = [
+    { name = "Baggio Luiz de Castro e Silva", email = "baggio.silva@inpe.br" },
+]
+keywords = ["qgis", "plugin", "stac", "remote-sensing", "brazil-data-cube", "vrt", "cog"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+
+[project.urls]
+Homepage = "https://github.com/BaggioCastro/bdc-loader"
+Repository = "https://github.com/BaggioCastro/bdc-loader"
+Issues = "https://github.com/BaggioCastro/bdc-loader/issues"
+Documentation = "https://brazil-data-cube.github.io/"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+exclude = ["bdc_loader_plugin/lib/"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E402",  # module-import-not-at-top — intentional for lazy/circular import avoidance
+    "E501",  # line too long — enforced at 120 but many UI strings exceed it
+    "E741",  # ambiguous variable name (l, O, I) — used in domain-specific code
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # package re-exports
+
+[tool.pytest.ini_options]
+testpaths = ["bdc_loader_plugin/tests"]
+# pytest's defaults, plus local drafts and built releases kept out of the repository.
+norecursedirs = [".*", "*.egg", "build", "dist", "venv", "node_modules", "scratch", "releases"]
+python_files = "test_*.py"
+addopts = "-x -q -m 'not integration'"
+markers = [
+    "integration: needs the live BDC services over the network; excluded by default, run with '-m integration'.",
+    "gdal: runs real GDAL on local files (offline); part of the default run, skipped when no real GDAL binding is installed.",
+]

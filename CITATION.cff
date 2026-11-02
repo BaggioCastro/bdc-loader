@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use BDC Loader in your work, please cite it as below."
+title: "BDC Loader: QGIS plugin for the Brazil Data Cube"
+version: 1.0.0
+date-released: "2026-11-02"
+license: GPL-3.0-only
+repository-code: "https://github.com/BaggioCastro/bdc-loader"
+authors:
+  - family-names: "Castro e Silva"
+    given-names: "Baggio Luiz de"
+    affiliation: "National Institute for Space Research (INPE)"

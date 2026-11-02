@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    # ubuntu-latest (26.04) has no Python 3.9 build; 24.04 has every version of the matrix.
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install test dependencies
+        # ruff pinned: a newer ruff can change the format check on its own.
+        run: pip install pytest ruff==0.15.10 numpy requests python-dateutil
+
+      - name: Lint with ruff
+        run: ruff check bdc_loader_plugin/ --exclude bdc_loader_plugin/lib/
+
+      - name: Check formatting with ruff
+        run: ruff format bdc_loader_plugin/ --exclude bdc_loader_plugin/lib/ --check
+
+      - name: Run tests
+        run: pytest bdc_loader_plugin/tests/ -x -q
+
+  package:
+    # The release ZIP, checked as plugins.qgis.org checks an upload.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install the checkers of plugins.qgis.org
+        run: pip install bandit==1.9.4 detect-secrets==1.5.0
+
+      - name: Build the ZIP
+        run: |
+          python bump_version.py --check
+          mkdir dist
+          python package_plugin.py -o dist
+
+      - name: Check the package rules
+        run: python check_package.py dist/bdc_loader_plugin_v*.zip
+
+      - name: Bandit and detect-secrets on the packaged plugin
+        run: |
+          python -m zipfile -e dist/bdc_loader_plugin_v*.zip unpacked
+          bandit -r unpacked -q --severity-level high
+          detect-secrets scan --all-files unpacked > secrets.json
+          python -c "import json, sys; r = json.load(open('secrets.json'))['results']; print(r or 'no secrets'); sys.exit(bool(r))"
+
+      - name: Keep the ZIP of this commit
+        uses: actions/upload-artifact@v7
+        with:
+          name: bdc_loader_plugin
+          path: dist/bdc_loader_plugin_v*.zip
+
+  qgis-minimum:
+    # The oldest QGIS that metadata.txt accepts (qgisMinimumVersion=3.22).
+    name: QGIS 3.22 (minimum version)
+    runs-on: ubuntu-24.04
+    container: qgis/qgis:final-3_22_16
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Smoke check in QGIS 3.22
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python3 bdc_loader_plugin/tests/smoke_qgis.py
+
+  desktop:
+    # The plugin in a real QGIS from conda-forge, without a screen, on each desktop system.
+    name: QGIS on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up QGIS from conda-forge
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: qgis
+          create-args: qgis python=3.12 pytest
+          condarc: |
+            channels:
+              - conda-forge
+          cache-environment: true
+
+      # The bash activation of QGIS joins PYTHONPATH with ':', which Python on Windows does not split.
+      - name: Point Python to QGIS on Windows
+        if: runner.os == 'Windows'
+        run: |
+          lib="$(cygpath -w "$CONDA_PREFIX/Library")"
+          echo "BDC_QGIS_PYTHONPATH=$lib\\python;$lib\\python\\plugins" >> "$GITHUB_ENV"
+
+      - name: Smoke check in QGIS
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          [ -z "$BDC_QGIS_PYTHONPATH" ] || export PYTHONPATH="$BDC_QGIS_PYTHONPATH"
+          python bdc_loader_plugin/tests/smoke_qgis.py
+
+      - name: Run tests
+        run: |
+          [ -z "$BDC_QGIS_PYTHONPATH" ] || export PYTHONPATH="$BDC_QGIS_PYTHONPATH"
+          python -m pytest bdc_loader_plugin/tests/ -q -o addopts="-m 'not integration'"

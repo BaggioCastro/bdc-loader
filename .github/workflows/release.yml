@@ -1,0 +1,50 @@
+name: Release
+
+# A tag v<VERSION> builds the plugin ZIP and publishes it on a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: The tag matches VERSION
+        run: |
+          version="$(cat bdc_loader_plugin/VERSION)"
+          [ "$GITHUB_REF_NAME" = "v$version" ] || { echo "tag $GITHUB_REF_NAME, VERSION $version"; exit 1; }
+          python bump_version.py --check
+
+      - name: Build and check the ZIP
+        run: |
+          mkdir dist
+          python package_plugin.py -o dist
+          python check_package.py dist/bdc_loader_plugin_v*.zip
+
+      - name: Release notes from docs/CHANGELOG.md
+        run: |
+          python - <<'PY'
+          import re
+          version = open("bdc_loader_plugin/VERSION").read().strip()
+          text = open("docs/CHANGELOG.md", encoding="utf-8").read()
+          match = re.search(rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[|\Z)", text, re.M | re.S)
+          notes = match.group(1).strip() if match else f"BDC Loader {version}"
+          notes += "\n\nInstall: download bdc_loader_plugin_v" + version + ".zip below, then in QGIS open "
+          notes += "Plugins > Manage and Install Plugins > Install from ZIP."
+          open("notes.md", "w", encoding="utf-8").write(notes + "\n")
+          PY
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/bdc_loader_plugin_v*.zip --title "BDC Loader ${GITHUB_REF_NAME#v}" --notes-file notes.md

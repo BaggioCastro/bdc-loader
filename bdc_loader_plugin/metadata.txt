@@ -1,0 +1,30 @@
+[general]
+name=BDC Loader
+qgisMinimumVersion=3.22
+qgisMaximumVersion=4.99
+description=Search, load, download and extract time series from Brazil Data Cube (BDC) imagery in QGIS
+version=1.0.0
+author=Baggio Luiz de Castro e Silva
+email=baggio.silva@inpe.br
+about=Searches the Brazil Data Cube (BDC) STAC catalog of INPE and loads its image collections and data cubes (Sentinel-2, Landsat, CBERS, Amazonia-1, MODIS and others) as layers read straight from the Cloud Optimized GeoTIFFs, by tile, drawn extent or vector file. Downloads scenes and crops in the chosen projection, extracts time series of points from WTSS or from the COGs, and steps through dates on a timeline. Works offline with the images already downloaded. Interface in English and Brazilian Portuguese, with a guided tutorial. The time series chart needs matplotlib: when QGIS has none, the plugin offers, at the user's request, to install a compatible version with pip into the QGIS profile folder.
+tracker=https://github.com/BaggioCastro/bdc-loader/issues
+repository=https://github.com/BaggioCastro/bdc-loader
+tags=raster, remote sensing, brazil data cube, sentinel, landsat, cbers, modis, inpe, stac, time series
+homepage=https://github.com/BaggioCastro/bdc-loader#readme
+category=Raster
+icon=icon.png
+experimental=False
+deprecated=False
+changelog=
+    1.0.0:
+    - Search of the Brazil Data Cube STAC catalog by collection, period, cloud cover and area, given as BDC tiles, an extent drawn on the map or a vector file.
+    - Loading of the images of each date as QGIS layers read from the Cloud Optimized GeoTIFFs.
+    - Download of scenes and of crops clipped to an extent or a polygon, in BDC Albers, WGS 84 or the project CRS.
+    - Time series of points from WTSS or read from the COGs, drawn as line charts and RGB scatter plots.
+    - Timeline toolbar that steps through the dates of the loaded layers.
+    - Offline mode: without a connection to the BDC, Search lists and loads the images already downloaded on the computer.
+    - BDC tile grids downloaded from the BDC and selected on the map canvas.
+    - Button that sets the QGIS project to SIRGAS 2000 / Brazil Albers (EPSG:10857).
+    - Interface in English and Brazilian Portuguese, switched by the flags in the header.
+    - Tutorial that walks through a complete case with the plugin's own buttons.
+    - Fixes and other changes: docs/CHANGELOG.md in the repository.

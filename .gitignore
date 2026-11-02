@@ -1,0 +1,29 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+*.swp
+*.swo
+*~
+.DS_Store
+.pytest_cache/
+.coverage
+htmlcov/
+.conda/
+.idea/
+.vscode/
+releases/
+*.bak
+
+# Release ZIP written to the repository root by package_plugin.py
+bdc_loader_plugin_v*.zip
+
+# Runtime plugin logs (regenerated per-install; not source)
+**/logs/bdc_loader.jsonl
+
+# QGIS writes this style database into the working directory when the plugin
+# is exercised from the repository root; it is user state, not source.
+symbology-style.db
